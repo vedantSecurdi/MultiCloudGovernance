@@ -1,0 +1,41 @@
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+// Define the JSON policy document as a string
+String jsonPolicy = 
+  "{ " +
+  "  \"Version\": \"2012-10-17\"," +
+  "  \"Statement\": [" +
+  "    {" +
+  "      \"Effect\": \"Allow\"," +
+  "      \"Action\": [" +
+  "        \"ec2:StartInstances\"," +
+  "        \"ec2:StopInstances\"" +
+  "      ]," +
+  "      \"Resource\": \"arn:aws:ec2:*:*:instance/*\"" +
+  "    }" +
+  "  ]" +
+  "}";
+
+try {
+    // Parse the JSON policy
+    JSONObject policyObject = new JSONObject(jsonPolicy);
+
+    // Extract values from the policy
+    String version = policyObject.getString("Version");
+    JSONArray statementArray = policyObject.getJSONArray("Statement");
+    
+    // Extract values from the statement array (assuming there's only one statement)
+    JSONObject statementObject = statementArray.getJSONObject(0);
+    String effect = statementObject.getString("Effect");
+    JSONArray actionsArray = statementObject.getJSONArray("Action");
+    String resource = statementObject.getString("Resource");
+    
+    // Print the extracted values
+    System.out.println("Version: " + version);
+    System.out.println("Effect: " + effect);
+    System.out.println("Actions: " + actionsArray.toString());
+    System.out.println("Resource: " + resource);
+} catch (Exception e) {
+    e.printStackTrace();
+}
