@@ -1,6 +1,6 @@
 import java.util.HashMap;
 import java.util.Map;
-import Sailpoint.object.Context;
+import sailpoint.object.context;
 
 public class YourClassName {
     public static void main(String[] args) {
@@ -9,7 +9,7 @@ public class YourClassName {
 
          
 
-        Sailpoint.object.Context context = new SailPoint.object.Context();
+        sailpoint.object.context context = new sailPoint.object.context();
         String managerID = context.getAttribute("managerId");
         returnMap.put("identityAttributeName", "employee_id");
         returnMap.put("identityAttributeValue", managerID);
