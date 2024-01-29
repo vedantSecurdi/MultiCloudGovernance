@@ -1,50 +1,82 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
-<Rule   language="beanshell" name="TRNG-IdentityCreationRule-SetPassword" type="IdentityCreation">
-  <Description>Identity creation rules are used to set attributes on new Identity objects when they are created.  New identities may be created during the aggregation of application accounts, or optionally created after pass-through authentication.
-
-One common operation is to change the name property of the identity when the default application name is complex (such as a directory DN).
-
-Another common operation is to assign a set of initial capabilities based on the attributes pulled from the application account.</Description>
-  <Signature returnType="void">
+<Rule created="1699607427413" id="0a00020f8bad1e74818bb87f39550960" language="beanshell" modified="1700111283260" name="objectcounter" significantModified="1700111283260">
+  <Signature>
     <Inputs>
-      <Argument name="log">
-        <Description>
-          The log object associated with the SailPointContext.
-        </Description>
-      </Argument>
-      <Argument name="context">
-        <Description>
-          A sailpoint.api.SailPointContext object that can be used to query the database if necessary.
-        </Description>
-      </Argument>
-      <Argument name="environment" type="Map">
-        <Description>
-          Arguments passed to the aggregation task.
-        </Description>
-      </Argument>
-      <Argument name="application">
-        <Description>
-          Application being aggregated.
-        </Description>
-      </Argument>
-      <Argument name="account" type="ResourceObject">
-        <Description>
-          The resource account for the identity being created.
-        </Description>
-      </Argument>
-      <Argument name="identity" type="Identity">
-        <Description>
-          The identity that is being created.
-        </Description>
-      </Argument>
+      <Argument name="classname"/>
     </Inputs>
   </Signature>
-  <Source>import sailpoint.object.Identity;
+  <Source>
+import sailpoint.object.WorkItem;
+import sailpoint.object.Bundle;
+import sailpoint.object.context;
+import sailpoint.object.RemediationItem;
+import sailpoint.object.Task;
+import sailpoint.object.Filter;
+import sailpoint.object.QueryOptions;
+import sailpoint.api;
+import java.util.*;
+import sailpoint.object.SailPointObject;
+import sailpoint.tools.*;
+import sailpoint.api.Workflower;
+import sailpoint.object.AuditEvent;
 
-    // All identities using this creation rule will have their passwords set to "xyzzy"
+String Wtype = "Remediation";
+Filter filter = Filter.eq("type", Wtype);
+QueryOptions queryOptions = new QueryOptions();
+queryOptions.addFilter(filter);
+List RemworkItems = context.getObjects(WorkItem.class,queryOptions);
 
-identity.setPassword("xyzzy");
+for (WorkItem w : RemworkItems) 
+{
+    if (w.getDescription().contains("Role Composition") || w.getDescription().contains("Remove required role")) 
+    {
+        List RI = w.getRemediationItems();
+   
+        for(RemediationItem R : RI)
+            {
+                String Desc = R.getDescription();
+                String[] parts = Desc.split("role '");
+                String sp = parts[1];
+                String[] parts2 = sp.split("'");
+                String sp1 = parts2[0];
+                char charToRemove = '\'';
+                String IString = sp1.replace(String.valueOf(charToRemove), "");
+                String sp2 = parts[2];
+                String BString = sp2.replace(String.valueOf(charToRemove), "");
+                Bundle Bbundle = context.getObjectByName(Bundle.class, BString);
+                Bundle Ibundle = context.getObjectByName(Bundle.class, IString);
+                
+                Bbundle.removeRequirement(Ibundle);
+                  
+                context.saveObject(Bbundle);
+                AuditEvent ae = new AuditEvent();
+                String action = "Role Composition Certification";
+                ae.setAction(action);
+                String launcher = "Automatic Workitem Resolution";
+                ae.setSource(launcher);
+                ae.setTarget("Removed "+IString+" from "+BString);
+                
+                context.saveObject(ae);
+                context.commitTransaction();
+          
+                
+                
+            }
+ w.setState(WorkItem.State.Finished);
+ w.setCompleter("Automated");
+ w.setCompletionComments("Process Completed in Background");
+ Workflower workflower = new Workflower(context);  
+ workflower.process(w, false);
+
+ context.decache(w);
+  
+    }
+    
+}
+
+//return state();
+//Workitem States - Cancelled, Expired, Finished, Pending, Rejected, Returned
 
 </Source>
 </Rule>
